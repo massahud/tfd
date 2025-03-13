@@ -14,6 +14,7 @@
                 Math.min(visualViewport.width, visualViewport.height) * 0.95;
             const width = side;
             const height = side;
+        
 
             class Board {
                 rows;
@@ -21,6 +22,7 @@
                 nodes;
                 nodeInfos = new Map();
                 stats = new Map();
+                #tiers = {None: 'None', Tier1: 'Normal', Tier2: 'Rare', Tier3: 'Ultimate'}
 
                 constructor(boardData, nodeData, statData) {
                     this.columns = boardData[0].column_size;
@@ -38,6 +40,8 @@
                                 effect.stat_name = stat.stat_name;
                             }
                         });
+                        if (node.tier_id)
+                        node.tier_name = this.#tiers[node.tier_id] || 'None';
                         this.nodeInfos.set(node.node_id, node);
                     });
 
@@ -123,9 +127,9 @@
                             tooltip
                                 .html(
                                     info
-                                        ? `${
-                                              info.node_name
-                                          }<br>${info.node_effect
+                                        ? `${info.node_name}<br>
+                                          ${info.tier_name}<br>
+                                          ${info.node_effect
                                               .map(
                                                   (effect) =>
                                                       `${effect.stat_name}: ${
