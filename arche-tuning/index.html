@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta viewport="width=device-width, initial-scale=1" />
+    </head>
+    <body>
+        <div id="container"></div>
+
+        <script type="module">
+            import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+            // Declare the chart dimensions and margins.
+            const side =
+                Math.min(visualViewport.width, visualViewport.height) * 0.95;
+            const width = side;
+            const height = side;
+
+            class Board {
+                rows;
+                columns;
+                nodes;
+                nodeInfos = new Map();
+                stats = new Map();
+
+                constructor(boardData, nodeData, statData) {
+                    this.columns = boardData[0].column_size;
+                    this.rows = boardData[0].row_size;
+                    this.nodes = boardData[0].node.map((n) => new Node(n));
+
+                    statData.forEach((stat) => {
+                        this.stats.set(stat.stat_id, stat);
+                    });
+
+                    nodeData.forEach((node) => {
+                        node.node_effect.forEach((effect) => {
+                            const stat = this.stats.get(effect.stat_id);
+                            if (stat) {
+                                effect.stat_name = stat.stat_name;
+                            }
+                        });
+                        this.nodeInfos.set(node.node_id, node);
+                    });
+
+                    console.log(this.nodeInfos);
+                }
+            }
+
+            class Node {
+                constructor(node) {
+                    this.id = node.node_id;
+                    this.row = node.position_row;
+                    this.column = node.position_column;
+                }
+            }
+
+            const boardData = d3.json(
+                "https://open.api.nexon.com/static/tfd/meta/arche-tuning-board.json"
+            );
+            const nodeData = d3.json(
+                "https://open.api.nexon.com/static/tfd/meta/en/arche-tuning-node.json"
+            );
+            const statData = d3.json(
+                "https://open.api.nexon.com/static/tfd/meta/en/stat.json"
+            );
+            Promise.all([boardData, nodeData, statData])
+                .then((data) => {
+                    const board = new Board(data[0], data[1], data[2]);
+                    console.log("Board", board);
+
+                    // Create the SVG container.
+                    const svg = d3
+                        .create("svg")
+                        .attr("width", width)
+                        .attr("height", height);
+
+                    const cellWidth = width / board.columns;
+                    const cellHeight = height / board.rows;
+
+                    svg.selectAll("rect")
+                        .data(board.nodes)
+                        .enter()
+                        .append("rect")
+                        .attr("x", (d) => d.column * cellWidth)
+                        .attr("y", (d) => d.row * cellHeight)
+                        .attr("width", cellWidth)
+                        .attr("height", cellHeight)
+                        .attr("fill", "lightblue")
+                        .attr("stroke", "black");
+
+                    // Append images using the nodeInfos map.
+                    svg.selectAll("image")
+                        .data(board.nodes)
+                        .enter()
+                        .append("image")
+                        .attr("x", (d) => d.column * cellWidth)
+                        .attr("y", (d) => d.row * cellHeight)
+                        .attr("width", cellWidth)
+                        .attr("height", cellHeight)
+                        .attr("href", (d) => {
+                            // Use board.nodeInfos map to set the img url.
+                            const info = board.nodeInfos.get(d.id);
+                            return info ? info.node_image_url : "";
+                        });
+
+                    // Create a tooltip div (appended to the body).
+                    const tooltip = d3
+                        .select("body")
+                        .append("div")
+                        // Note: inline styles can be adjusted as needed without generating external styles.
+                        .style("position", "absolute")
+                        .style("display", "none")
+                        .style("background", "white")
+                        .style("border", "1px solid #ccc")
+                        .style("padding", "5px")
+                        .style("pointer-events", "none");
+
+                    // Add mouse event listeners on the images (could also be added to the rect elements)
+                    svg.selectAll("image")
+                        .data(board.nodes)
+                        .on("mouseover", (event, d) => {
+                            const info = board.nodeInfos.get(d.id);
+                            // Display part of the node info; adjust the properties as needed.
+                            tooltip
+                                .html(
+                                    info
+                                        ? `${
+                                              info.node_name
+                                          }<br>${info.node_effect
+                                              .map(
+                                                  (effect) =>
+                                                      `${effect.stat_name}: ${
+                                                          effect.operator_type
+                                                              ? effect.operator_type +
+                                                                " "
+                                                              : ""
+                                                      }${effect.stat_value.toFixed(
+                                                          2
+                                                      )}`
+                                              )
+                                              .join("<br>")}`
+                                        : "No data"
+                                )
+                                .style("display", "block")
+                                .style("left", event.pageX + 5 + "px")
+                                .style("top", event.pageY + 5 + "px");
+                        })
+                        .on("mousemove", (event) => {
+                            tooltip
+                                .style("left", event.pageX + 5 + "px")
+                                .style("top", event.pageY + 5 + "px");
+                        })
+                        .on("mouseout", () => {
+                            tooltip.style("display", "none");
+                        });
+
+                    container.append(svg.node());
+                })
+
+                .catch((error) => {
+                    console.error("Error loading JSON:", error);
+                });
+
+            // Append the SVG element.
+        </script>
+    </body>
+</html>
