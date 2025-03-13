@@ -80,6 +80,14 @@
                     const cellWidth = width / board.columns;
                     const cellHeight = height / board.rows;
 
+                    const tierFill = {
+                        None: "lightgray",
+                        Tier1: "#28868a",
+                        Tier2: "#83288a",
+                        Tier3: "#c39241",
+                        Tier4: "#9f2d1e"
+                    };
+
                     svg.selectAll("rect")
                         .data(board.nodes)
                         .enter()
@@ -88,7 +96,7 @@
                         .attr("y", (d) => d.row * cellHeight)
                         .attr("width", cellWidth)
                         .attr("height", cellHeight)
-                        .attr("fill", "lightblue")
+                        .attr("fill", (d) => tierFill[board.nodeInfos.get(d.id)?.tier_id] || "lightblue")
                         .attr("stroke", "black");
 
                     // Append images using the nodeInfos map.
