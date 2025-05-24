@@ -14,7 +14,8 @@
                 Math.min(visualViewport.width, visualViewport.height) * 0.95;
             const width = side;
             const height = side;
-        
+            
+            const boardPos = 1;
 
             class Board {
                 rows;
@@ -23,11 +24,12 @@
                 nodeInfos = new Map();
                 stats = new Map();
                 #tiers = {None: 'None', Tier1: 'Normal', Tier2: 'Rare', Tier3: 'Ultimate'}
+                
 
                 constructor(boardData, nodeData, statData) {
-                    this.columns = boardData[0].column_size;
-                    this.rows = boardData[0].row_size;
-                    this.nodes = boardData[0].node.map((n) => new Node(n));
+                    this.columns = boardData[boardPos].column_size;
+                    this.rows = boardData[boardPos].row_size;
+                    this.nodes = boardData[boardPos].node.map((n) => new Node(n));
 
                     statData.forEach((stat) => {
                         this.stats.set(stat.stat_id, stat);
@@ -103,6 +105,7 @@
                     svg.selectAll("image")
                         .data(board.nodes)
                         .enter()
+                        
                         .append("image")
                         .attr("x", (d) => d.column * cellWidth)
                         .attr("y", (d) => d.row * cellHeight)
@@ -111,7 +114,7 @@
                         .attr("href", (d) => {
                             // Use board.nodeInfos map to set the img url.
                             const info = board.nodeInfos.get(d.id);
-                            return info ? info.node_image_url : "";
+                            return info?.node_image_url ? info.node_image_url : "./padlock.svg";
                         });
 
                     // Create a tooltip div (appended to the body).
